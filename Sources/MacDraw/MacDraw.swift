@@ -306,27 +306,84 @@ final class OverlayCanvasView: NSView {
         guard points.count > 1 else { return points }
 
         let totalLength = pathLength(for: points)
-        guard totalLength > 0, let lastPoint = points.last else { return points }
+        guard totalLength > 0 else { return points }
 
-        let trimLength = totalLength * disappearanceProgress
-        var consumedLength: CGFloat = 0
+        let keepLength = totalLength * (1 - disappearanceProgress)
+        let trimLengthPerSide = (totalLength - keepLength) / 2
+        guard keepLength > 0 else { return [] }
+
+        return trimPath(points: points, startTrim: trimLengthPerSide, endTrim: trimLengthPerSide)
+    }
+
+    private func trimPath(points: [CGPoint], startTrim: CGFloat, endTrim: CGFloat) -> [CGPoint] {
+        guard points.count > 1 else { return points }
+
+        let totalLength = pathLength(for: points)
+        let startDistance = max(0, min(totalLength, startTrim))
+        let endDistance = max(startDistance, min(totalLength, totalLength - endTrim))
+
+        guard endDistance > startDistance else { return [] }
+
+        return subpath(points: points, from: startDistance, to: endDistance)
+    }
+
+    private func subpath(points: [CGPoint], from startDistance: CGFloat, to endDistance: CGFloat) -> [CGPoint] {
+        guard points.count > 1 else { return points }
+
+        var result: [CGPoint] = []
+        var traversed: CGFloat = 0
 
         for index in 1..<points.count {
-            let start = points[index - 1]
-            let end = points[index]
-            let segmentLength = distance(from: start, to: end)
+            let segmentStart = points[index - 1]
+            let segmentEnd = points[index]
+            let segmentLength = distance(from: segmentStart, to: segmentEnd)
+            let segmentRangeStart = traversed
+            let segmentRangeEnd = traversed + segmentLength
 
-            if consumedLength + segmentLength >= trimLength {
-                let remainingTrim = trimLength - consumedLength
-                let ratio = segmentLength == 0 ? 1 : remainingTrim / segmentLength
-                let trimmedStart = interpolate(from: start, to: end, progress: ratio)
-                return [trimmedStart] + Array(points[index...])
+            if segmentLength == 0 {
+                traversed = segmentRangeEnd
+                continue
             }
 
-            consumedLength += segmentLength
+            if segmentRangeEnd < startDistance {
+                traversed = segmentRangeEnd
+                continue
+            }
+
+            if segmentRangeStart > endDistance {
+                break
+            }
+
+            let localStart = max(startDistance, segmentRangeStart)
+            let localEnd = min(endDistance, segmentRangeEnd)
+
+            if localEnd < localStart {
+                traversed = segmentRangeEnd
+                continue
+            }
+
+            let startProgress = (localStart - segmentRangeStart) / segmentLength
+            let endProgress = (localEnd - segmentRangeStart) / segmentLength
+
+            let trimmedStart = interpolate(from: segmentStart, to: segmentEnd, progress: startProgress)
+            let trimmedEnd = interpolate(from: segmentStart, to: segmentEnd, progress: endProgress)
+
+            if result.isEmpty || distance(from: result[result.count - 1], to: trimmedStart) > 0.01 {
+                result.append(trimmedStart)
+            }
+
+            if distance(from: result[result.count - 1], to: trimmedEnd) > 0.01 {
+                result.append(trimmedEnd)
+            }
+
+            traversed = segmentRangeEnd
+
+            if segmentRangeEnd >= endDistance {
+                break
+            }
         }
 
-        return [lastPoint]
+        return result
     }
 
     private func pathLength(for points: [CGPoint]) -> CGFloat {
