@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="Resources/AppIcon-backup-source.png" alt="MacDraw icon" width="128">
+</p>
+
 # MacDraw
 
 MacDraw is a native macOS desktop overlay app that lets you draw directly on top of the screen with a transparent canvas.
