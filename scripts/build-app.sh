@@ -19,7 +19,7 @@ CLANG_MODULE_CACHE_PATH="$CLANG_CACHE_DIR" \
 swiftc \
   -sdk "$SDK_PATH" \
   -module-cache-path "$CACHE_DIR" \
-  Sources/MacDraw/MacDraw.swift \
+  Sources/MacDraw/*.swift \
   -o "$BIN_PATH"
 
 rm -rf "$APP_DIR"
