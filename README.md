@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Resources/AppIcon-backup-source.png" alt="MacDraw icon" width="128">
+  <img src="images/MacDraw_hero_clean_github.png" alt="MacDraw preview" width="800">
 </p>
 
 # MacDraw
